@@ -4337,6 +4337,21 @@ class TestQuantizedLinear(TestCase):
             self._test_qlinear_impl(batch_size, input_channels, output_channels,
                                     use_bias, post_op, use_multi_dim_input, use_channelwise)
 
+    @override_qengines
+    @unittest.skipIf(not TEST_CUDA, "CUDA unavailable")
+    def test_qlinear_cuda_input_raises(self):
+        input_channels = 32
+        output_channels = 64
+        X = torch.randn((1, input_channels), dtype=torch.float32, device="cuda")
+        X_q = torch.quantize_per_tensor(X, scale=1.2, zero_point=0, dtype=torch.quint8)
+        W = torch.randn((output_channels, input_channels), dtype=torch.float32)
+        W_q = torch.quantize_per_tensor(W, scale=0.2, zero_point=0, dtype=torch.qint8)
+        bias = torch.randn(output_channels, dtype=torch.float32)
+        W_prepack = torch.ops.quantized.linear_prepack(W_q, bias)
+
+        with self.assertRaisesRegex(RuntimeError, "Expected input tensor to be on CPU"):
+            torch.ops.quantized.linear(X_q, W_prepack, 4.2, 0)
+
     """Tests the correctness of the quantized linear_relu op."""
     @override_qengines
     def test_qlinear_relu(self):

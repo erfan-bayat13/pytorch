@@ -62,6 +62,10 @@ at::Tensor& PackedLinearWeight::apply_impl(
                 toString(c10::kQUInt8),
                 " but got ",
                 toString(input.scalar_type()));
+  TORCH_CHECK(
+      input.device().is_cpu(),
+      "quantized::linear(): Expected input tensor to be on CPU, got ",
+      input.device());
 
   // TODO: contiguous is called for further jit optimizations.
   auto input_contig = input.expect_contiguous();
@@ -474,6 +478,11 @@ at::Tensor PackedLinearWeightsQnnp::apply_impl_xnnp(
   TORCH_CHECK(
       input.dim() >= 2, func_name, ": Input tensor rank should be >= 2.");
   TORCH_CHECK(
+      input.device().is_cpu(),
+      func_name,
+      ": Expected input tensor to be on CPU, got ",
+      input.device());
+  TORCH_CHECK(
       !per_channel(),
       func_name,
       ": xnnpack does not currently have per_channel support.");
@@ -629,6 +638,10 @@ at::Tensor PackedLinearWeightsQnnp::apply_impl(
                 toString(c10::kQUInt8),
                 " but got ",
                 toString(input.scalar_type()));
+  TORCH_CHECK(
+      input.device().is_cpu(),
+      "quantized::linear (qnnpack): Expected input tensor to be on CPU, got ",
+      input.device());
 
   auto input_contig = input.contiguous();
 
